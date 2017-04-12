@@ -18,8 +18,10 @@
 //	        This is a LaTeX document.
 //	        \end{document}
 //	        `
-//	    var pdf, err = gotex.Render(document,
-//	        gotex.Options{Command: "/usr/bin/pdflatex", Runs: 1})
+//	    var pdf, err = gotex.Render(document, gotex.Options{
+//			Command: "/usr/bin/pdflatex",
+//			Runs: 1,
+//			Texinputs:"/my/asset/dir:/my/other/asset/dir"})
 //
 //	    if err != nil {
 //	        log.Println("render failed ", err)
@@ -51,6 +53,11 @@ type Options struct {
 	// If 0, gotex will automagically attempt to determine how many runs are
 	// required by parsing LaTeX log output.
 	Runs int
+
+	// Texinputs is a colon-separated list of directories containing assests
+	// such as image files that are needed to compile the document. It is added
+	// to $TEXINPUTS for the LaTeX process.
+	Texinputs string
 }
 
 // Render takes the LaTeX document to be rendered as a string. It returns the
@@ -112,6 +119,12 @@ func runLatex(document string, options Options, dir string) error {
 	// Feed the document to LaTeX over stdin.
 	cmd.Stdin = strings.NewReader(document)
 
+	// Set $TEXINPUTS if requested. The trailing colon means that LaTeX should
+	// include the normal asset directories as well.
+	if options.Texinputs != "" {
+		cmd.Env = append(os.Environ(), "TEXINPUTS="+options.Texinputs+":")
+	}
+
 	// Launch and let it finish.
 	var err = cmd.Start()
 	if err != nil {
@@ -125,7 +138,7 @@ func runLatex(document string, options Options, dir string) error {
 	return nil
 }
 
-// Parse the log file and attempt to determin whether another run is necessary
+// Parse the log file and attempt to determine whether another run is necessary
 // to finish the document.
 func needsRerun(dir string) bool {
 	var file, err = os.Open(path.Join(dir, "gotex.log"))

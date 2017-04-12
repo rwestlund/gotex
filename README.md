@@ -22,8 +22,10 @@ func main() {
         This is a LaTeX document.
         \end{document}
         `
-    var pdf, err = gotex.Render(document,
-        gotex.Options{Command: "/usr/bin/pdflatex", Runs: 1})
+    var pdf, err = gotex.Render(document, gotex.Options{
+        Command: "/usr/bin/pdflatex",
+        Runs: 1,
+        Texinputs:"/my/asset/dir:/my/other/asset/dir"})
 
     if err != nil {
         log.Println("render failed ", err)
